@@ -1,0 +1,157 @@
+services:
+  proxy:
+    image: nginx:1.27-alpine
+    container_name: clientpulse-proxy-prod
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_certs:/etc/letsencrypt:ro
+      - certbot_challenge:/var/www/certbot:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - clientpulse_network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: clientpulse-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-clientpulse}
+    expose:
+      - '5432'
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB:-clientpulse}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - clientpulse_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: clientpulse-redis-prod
+    restart: always
+    command: >
+      sh -c '
+      if [ -n "$$REDIS_PASSWORD" ]; then
+        exec redis-server --requirepass "$$REDIS_PASSWORD" --save 60 1 --loglevel warning
+      else
+        exec redis-server --save 60 1 --loglevel warning
+      fi
+      '
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    expose:
+      - '6379'
+    volumes:
+      - redis_prod_data:/data
+    healthcheck:
+      test: >
+        sh -c '
+        if [ -n "$$REDIS_PASSWORD" ]; then
+          redis-cli -a "$$REDIS_PASSWORD" ping
+        else
+          redis-cli ping
+        fi
+        '
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - clientpulse_network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: clientpulse-api:latest
+    container_name: clientpulse-api-prod
+    restart: always
+    command: ['node', 'dist/main']
+    expose:
+      - '4000'
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      FRONTEND_URL: ${FRONTEND_URL:-}
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_REPORT_MAX_TOKENS: ${AI_REPORT_MAX_TOKENS:-1200}
+      AI_REPORT_TEMPERATURE: ${AI_REPORT_TEMPERATURE:-0.2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:4000/api/v1/health/ready || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - clientpulse_network
+
+  worker:
+    image: clientpulse-api:latest
+    container_name: clientpulse-worker-prod
+    restart: always
+    command: ['node', 'dist/worker']
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_REPORT_MAX_TOKENS: ${AI_REPORT_MAX_TOKENS:-1200}
+      AI_REPORT_TEMPERATURE: ${AI_REPORT_TEMPERATURE:-0.2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - clientpulse_network
+
+volumes:
+  postgres_prod_data:
+    name: clientpulse_postgres_prod_data
+  redis_prod_data:
+    name: clientpulse_redis_prod_data
+  certbot_certs:
+    name: clientpulse_certbot_certs
+  certbot_challenge:
+    name: clientpulse_certbot_challenge
+
+networks:
+  clientpulse_network:
+    name: clientpulse_prod_network
+    driver: bridge
