@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "buildCommand": "npx prisma generate && npm run build",
+  "rewrites": [
+    {
+      "source": "/api/v1/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ]
+}

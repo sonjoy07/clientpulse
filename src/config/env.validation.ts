@@ -27,6 +27,10 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
+  DIRECT_URL?: string;
+
+  @IsString()
+  @IsOptional()
   JWT_ACCESS_SECRET?: string;
 
   @IsString()
