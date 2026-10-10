@@ -15,6 +15,7 @@ import { BudgetsModule } from './budgets/budgets.module.js';
 import { ClientPortalModule } from './client-portal/client-portal.module.js';
 import { AiReportsModule } from './ai-reports/ai-reports.module.js';
 import { QueuesModule } from './queues/queues.module.js';
+import { AppController } from './app.controller.js';
 
 @Module({
   imports: [
@@ -37,5 +38,6 @@ import { QueuesModule } from './queues/queues.module.js';
     QueuesModule,
     AiReportsModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

@@ -17,8 +17,10 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('port') ?? 4000;
 
-  // Global API Prefix
-  app.setGlobalPrefix('api/v1');
+  // Global API Prefix (exclude root URL for welcome/status check)
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['/'],
+  });
 
   // Trust Proxy behind Nginx / cloud load balancers
   app.set('trust proxy', 1);
