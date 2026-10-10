@@ -1,10 +1,11 @@
 # ==============================================================================
-# ClientPulse — Render Infrastructure-as-Code Blueprint
-# Architecture: NestJS API (Web) + BullMQ Worker (Worker) + Redis (Queue)
+# ClientPulse — Render Infrastructure-as-Code Blueprint (100% Free Tier)
+# Architecture: NestJS API + Built-in Background Processor (Unified Web Service)
 # Database: Supabase PostgreSQL (via DATABASE_URL & DIRECT_URL)
+# Cache / Queue: Upstash Redis (Free Serverless) or Managed Redis
 # ==============================================================================
 services:
-  # 1. ClientPulse REST API Web Service
+  # 1. ClientPulse REST API Web Service & Background Worker
   - type: web
     name: clientpulse-api
     runtime: node
@@ -31,15 +32,13 @@ services:
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
       - key: REDIS_HOST
-        fromService:
-          type: redis
-          name: clientpulse-redis
-          property: host
+        sync: false
       - key: REDIS_PORT
-        fromService:
-          type: redis
-          name: clientpulse-redis
-          property: port
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_TLS
+        value: "true"
       - key: AI_PROVIDER
         value: mock
       - key: AI_API_KEY
@@ -48,52 +47,3 @@ services:
         value: gpt-4o-mini
       - key: FRONTEND_URL
         sync: false
-
-  # 2. BullMQ Background AI Report Worker
-  - type: worker
-    name: clientpulse-worker
-    runtime: node
-    plan: starter
-    region: oregon
-    buildCommand: npm ci && npx prisma generate && npm run build
-    startCommand: npm run start:worker
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        sync: false
-      - key: DIRECT_URL
-        sync: false
-      - key: JWT_ACCESS_SECRET
-        fromService:
-          type: web
-          name: clientpulse-api
-          envVarKey: JWT_ACCESS_SECRET
-      - key: JWT_REFRESH_SECRET
-        fromService:
-          type: web
-          name: clientpulse-api
-          envVarKey: JWT_REFRESH_SECRET
-      - key: REDIS_HOST
-        fromService:
-          type: redis
-          name: clientpulse-redis
-          property: host
-      - key: REDIS_PORT
-        fromService:
-          type: redis
-          name: clientpulse-redis
-          property: port
-      - key: AI_PROVIDER
-        value: mock
-      - key: AI_API_KEY
-        sync: false
-      - key: AI_MODEL
-        value: gpt-4o-mini
-
-  # 3. Redis Instance for BullMQ Queues
-  - type: redis
-    name: clientpulse-redis
-    plan: free
-    region: oregon
-    ipAllowList: [] # Private internal network access only
