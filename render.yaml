@@ -40,11 +40,6 @@ services:
           type: redis
           name: clientpulse-redis
           property: port
-      - key: REDIS_PASSWORD
-        fromService:
-          type: redis
-          name: clientpulse-redis
-          property: password
       - key: AI_PROVIDER
         value: mock
       - key: AI_API_KEY
@@ -89,11 +84,6 @@ services:
           type: redis
           name: clientpulse-redis
           property: port
-      - key: REDIS_PASSWORD
-        fromService:
-          type: redis
-          name: clientpulse-redis
-          property: password
       - key: AI_PROVIDER
         value: mock
       - key: AI_API_KEY
