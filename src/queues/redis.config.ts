@@ -43,4 +43,3 @@ export function getRedisConfig(
     enableReadyCheck: false,
   };
 }
-
