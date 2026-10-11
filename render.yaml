@@ -1,11 +1,13 @@
 # ==============================================================================
-# ClientPulse — Render Infrastructure-as-Code Blueprint (100% Free Tier)
-# Architecture: NestJS API + Built-in Background Processor (Unified Web Service)
-# Database: Supabase PostgreSQL (via DATABASE_URL & DIRECT_URL)
-# Cache / Queue: Upstash Redis (Free Serverless) or Managed Redis
+# ClientPulse — Render Infrastructure-as-Code Blueprint
+# Architecture:
+#   1. Web Service: NestJS REST API (port 10000, public HTTPS)
+#   2. Background Worker: BullMQ Worker (processes AI reports & queues)
+# Database: Render PostgreSQL (or Supabase via DATABASE_URL & DIRECT_URL)
+# Queue / Cache: Render Redis (or Upstash via REDIS_URL)
 # ==============================================================================
 services:
-  # 1. ClientPulse REST API Web Service & Background Worker
+  # 1. ClientPulse REST API Web Service
   - type: web
     name: clientpulse-api
     runtime: node
@@ -33,14 +35,6 @@ services:
         value: 7d
       - key: REDIS_URL
         sync: false
-      - key: REDIS_HOST
-        sync: false
-      - key: REDIS_PORT
-        sync: false
-      - key: REDIS_PASSWORD
-        sync: false
-      - key: REDIS_TLS
-        value: "true"
       - key: AI_PROVIDER
         value: mock
       - key: AI_API_KEY
@@ -49,3 +43,31 @@ services:
         value: gpt-4o-mini
       - key: FRONTEND_URL
         sync: false
+
+  # 2. ClientPulse BullMQ Background Worker
+  - type: worker
+    name: clientpulse-worker
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npm run start:worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: AI_PROVIDER
+        value: mock
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_MODEL
+        value: gpt-4o-mini

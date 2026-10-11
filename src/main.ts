@@ -37,11 +37,20 @@ async function bootstrap() {
     configService.get<string>('environment') ||
     process.env.NODE_ENV ||
     'development';
-  const frontendUrl = process.env.FRONTEND_URL;
+  const frontendUrl =
+    configService.get<string>('FRONTEND_URL') || process.env.FRONTEND_URL;
   const allowedOrigins =
-    nodeEnv === 'production' && frontendUrl
-      ? frontendUrl.split(',').map((u) => u.trim())
+    nodeEnv === 'production'
+      ? frontendUrl
+        ? frontendUrl.split(',').map((u) => u.trim())
+        : false
       : true;
+
+  if (nodeEnv === 'production' && !frontendUrl) {
+    logger.warn(
+      'FRONTEND_URL is not set in production. CORS will reject cross-origin browser requests.',
+    );
+  }
 
   app.enableCors({
     origin: allowedOrigins,

@@ -71,6 +71,10 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
+  REDIS_URL?: string;
+
+  @IsString()
+  @IsOptional()
   REDIS_HOST: string = 'localhost';
 
   @IsNumber()
@@ -80,6 +84,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   REDIS_PASSWORD?: string;
+
+  @IsString()
+  @IsOptional()
+  FRONTEND_URL?: string;
 }
 
 export function validate(config: Record<string, unknown>) {
@@ -102,12 +110,22 @@ export function validate(config: Record<string, unknown>) {
     customErrors.push('DATABASE_URL must be provided and non-empty');
   }
 
-  // 2. Redis validation
-  if (!validatedConfig.REDIS_HOST || validatedConfig.REDIS_HOST.trim() === '') {
-    customErrors.push('REDIS_HOST must be provided and non-empty');
-  }
-  if (!validatedConfig.REDIS_PORT || isNaN(validatedConfig.REDIS_PORT)) {
-    customErrors.push('REDIS_PORT must be a valid number');
+  // 2. Redis validation (either REDIS_URL or REDIS_HOST must be provided)
+  const redisUrl = (config.REDIS_URL as string) || validatedConfig.REDIS_URL;
+  const hasRedisUrl = typeof redisUrl === 'string' && redisUrl.trim() !== '';
+
+  if (!hasRedisUrl) {
+    if (
+      !validatedConfig.REDIS_HOST ||
+      validatedConfig.REDIS_HOST.trim() === ''
+    ) {
+      customErrors.push(
+        'Either REDIS_URL or REDIS_HOST must be provided and non-empty',
+      );
+    }
+    if (!validatedConfig.REDIS_PORT || isNaN(validatedConfig.REDIS_PORT)) {
+      customErrors.push('REDIS_PORT must be a valid number');
+    }
   }
 
   // 3. JWT Secret validation in Production
