@@ -83,6 +83,30 @@ export class ProjectsController {
     );
   }
 
+  @Get(':id/health')
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.ADMIN,
+    Role.PROJECT_MANAGER,
+    Role.TEAM_LEAD,
+    Role.TEAM_MEMBER,
+  )
+  getHealth(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.projectsService.getProjectHealth(user.organizationId, id);
+  }
+
+  @Get(':id/risks')
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.ADMIN,
+    Role.PROJECT_MANAGER,
+    Role.TEAM_LEAD,
+    Role.TEAM_MEMBER,
+  )
+  getRisks(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.projectsService.getProjectRisks(user.organizationId, id);
+  }
+
   @Get(':id')
   findOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.projectsService.findOne(user.organizationId, id);

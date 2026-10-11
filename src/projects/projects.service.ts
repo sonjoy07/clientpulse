@@ -22,9 +22,21 @@ import {
   DeliverySummary,
   calculateTimelineStatus,
 } from './delivery-summary.types.js';
+import {
+  RiskEngineService,
+  RiskEvaluationInput,
+} from './services/risk-engine.service.js';
+import { HealthScoreService } from './services/health-score.service.js';
+import {
+  ProjectHealthResult,
+  ProjectRisk,
+} from './services/risk-engine.types.js';
 
 @Injectable()
 export class ProjectsService {
+  private readonly riskEngineService = new RiskEngineService();
+  private readonly healthScoreService = new HealthScoreService();
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(organizationId: string, dto: CreateProjectDto) {
@@ -385,6 +397,89 @@ export class ProjectsService {
         milestones: milestoneStats,
         timeline,
       },
+    };
+  }
+
+  async getProjectRisks(
+    organizationId: string,
+    projectId: string,
+  ): Promise<{ success: boolean; data: ProjectRisk[] }> {
+    const health = await this.getProjectHealth(organizationId, projectId);
+    return {
+      success: true,
+      data: health.data.risks,
+    };
+  }
+
+  async getProjectHealth(
+    organizationId: string,
+    projectId: string,
+  ): Promise<{ success: boolean; data: ProjectHealthResult }> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const deliveryRes = await this.getDeliverySummary(
+      organizationId,
+      projectId,
+    );
+    const delivery = deliveryRes.data;
+
+    const now = new Date();
+    const overdueMilestonesCount = await this.prisma.milestone.count({
+      where: {
+        projectId,
+        status: { not: MilestoneStatus.COMPLETED },
+        dueDate: { lt: now },
+      },
+    });
+
+    const budgetRecord = await this.prisma.projectBudget.findUnique({
+      where: { projectId },
+    });
+
+    let budgetBurnPercentage: number | undefined = undefined;
+    if (budgetRecord && Number(budgetRecord.totalBudget) > 0) {
+      const costAgg = await this.prisma.costEntry.aggregate({
+        where: { projectId },
+        _sum: { amount: true },
+      });
+      const spent = costAgg._sum.amount ? Number(costAgg._sum.amount) : 0;
+      budgetBurnPercentage = Math.round(
+        (spent / Number(budgetRecord.totalBudget)) * 100,
+      );
+    }
+
+    const maxMemberAgg = await this.prisma.projectMember.aggregate({
+      where: { projectId },
+      _max: { allocationPercentage: true },
+    });
+    const maxMemberAllocation = maxMemberAgg._max.allocationPercentage ?? 0;
+
+    const isOverdue = project.endDate
+      ? project.endDate < now && project.status !== ProjectStatus.COMPLETED
+      : false;
+
+    const riskInput: RiskEvaluationInput = {
+      budgetBurnPercentage,
+      timeBurnPercentage: delivery.timeline.expectedProgress,
+      isOverdue,
+      maxMemberAllocation,
+      blockedTasksCount: delivery.tasks.blocked,
+      overdueMilestonesCount,
+      now,
+    };
+
+    const risks = this.riskEngineService.evaluateRisks(riskInput);
+    const health = this.healthScoreService.calculateHealth(risks);
+
+    return {
+      success: true,
+      data: health,
     };
   }
 }
