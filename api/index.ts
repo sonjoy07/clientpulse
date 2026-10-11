@@ -11,7 +11,9 @@ let cachedHandler: any = null;
 
 async function createServer() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['/'],
+  });
   app.set('trust proxy', 1);
   app.disable('x-powered-by');
 
