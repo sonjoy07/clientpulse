@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import {
   ArrowLeft,
   Briefcase,
@@ -35,29 +36,33 @@ export default function ResourceProfilePage({ params }: PageProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <DashboardLayout title="Member Allocation" description="Team capacity and project allocations.">
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   if (error || !profile) {
     return (
-      <div className="p-8 text-center space-y-4">
-        <AlertTriangle className="w-10 h-10 text-rose-500 mx-auto" />
-        <h2 className="text-lg font-semibold">User Resource Profile Not Found</h2>
-        <p className="text-sm text-muted-foreground">
-          The requested member could not be found or you do not have permission to view their resource allocation.
-        </p>
-        <Link href="/resources">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Resources
-          </Button>
-        </Link>
-      </div>
+      <DashboardLayout title="Member Allocation" description="Team capacity and project allocations.">
+        <div className="p-8 text-center space-y-4">
+          <AlertTriangle className="w-10 h-10 text-rose-500 mx-auto" />
+          <h2 className="text-lg font-semibold">User Resource Profile Not Found</h2>
+          <p className="text-sm text-muted-foreground">
+            The requested member could not be found or you do not have permission to view their resource allocation.
+          </p>
+          <Link href="/resources">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Resources
+            </Button>
+          </Link>
+        </div>
+      </DashboardLayout>
     );
   }
 
@@ -88,7 +93,12 @@ export default function ResourceProfilePage({ params }: PageProps) {
   const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#94a3b8'];
 
   return (
-    <div className="space-y-6">
+    <DashboardLayout
+      title={`${uName} — Allocation Profile`}
+      description="Detailed project workload breakdown and capacity availability."
+      requiredRoles={['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD']}
+    >
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -248,5 +258,6 @@ export default function ResourceProfilePage({ params }: PageProps) {
         </Card>
       </div>
     </div>
-  );
+  </DashboardLayout>
+);
 }

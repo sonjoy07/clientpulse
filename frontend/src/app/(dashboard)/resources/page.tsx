@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import {
   Users,
   UserCheck,
@@ -67,17 +68,12 @@ export default function ResourcesPage() {
     : [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Resource Capacity Planning
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Monitor team allocation, detect burnout risks, and balance workload across active projects.
-          </p>
-        </div>
-      </div>
+    <DashboardLayout
+      title="Resource Capacity Planning"
+      description="Monitor team allocation, detect burnout risks, and balance workload across active projects."
+      requiredRoles={['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD']}
+    >
+      <div className="space-y-6">
 
       {/* Overview Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -345,5 +341,6 @@ export default function ResourcesPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  </DashboardLayout>
+);
 }
