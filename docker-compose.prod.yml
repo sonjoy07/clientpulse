@@ -82,6 +82,8 @@ services:
     command: ['node', 'dist/main']
     expose:
       - '4000'
+    ports:
+      - '4000:4000'
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -137,6 +139,23 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+    networks:
+      - clientpulse_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api/v1}
+    image: clientpulse-frontend:latest
+    container_name: clientpulse-frontend-prod
+    restart: always
+    ports:
+      - '3000:3000'
+    depends_on:
+      api:
         condition: service_healthy
     networks:
       - clientpulse_network
