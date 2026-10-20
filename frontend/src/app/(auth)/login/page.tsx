@@ -34,6 +34,7 @@ function LoginPageContent() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -42,6 +43,11 @@ function LoginPageContent() {
       password: '',
     },
   });
+
+  const handleQuickFill = (email: string) => {
+    setValue('email', email, { shouldValidate: true });
+    setValue('password', 'Password123!', { shouldValidate: true });
+  };
 
   const onSubmit = async (data: LoginFormData) => {
     setErrorMessage(null);
@@ -153,6 +159,39 @@ function LoginPageContent() {
                 )}
               </Button>
             </form>
+
+            {/* 1-Click Demo Login Shortcuts */}
+            <div className="mt-6 pt-5 border-t border-slate-200/80">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  Quick Fill Demo Credentials
+                </span>
+                <span className="text-[10px] text-primary font-mono font-medium">Password123!</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleQuickFill('admin@acme.example.com')}
+                  className="px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-primary/10 hover:border-primary/40 text-[11px] font-semibold text-slate-700 transition-colors text-center"
+                >
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickFill('pm@acme.example.com')}
+                  className="px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-primary/10 hover:border-primary/40 text-[11px] font-semibold text-slate-700 transition-colors text-center"
+                >
+                  PM
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickFill('client.rep@globalretail.example.com')}
+                  className="px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-primary/10 hover:border-primary/40 text-[11px] font-semibold text-slate-700 transition-colors text-center"
+                >
+                  Client
+                </button>
+              </div>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col border-t border-border/50 py-3 text-center text-xs text-muted-foreground bg-slate-50/50 rounded-b-xl">
             <div className="flex items-center gap-1.5 text-[11px]">
