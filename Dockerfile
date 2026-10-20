@@ -26,6 +26,7 @@ COPY src ./src/
 # Generate Prisma Client & compile TypeScript
 RUN npx prisma generate
 RUN npm run build
+RUN npx tsc prisma/seed.ts --skipLibCheck --module commonjs --target es2021 --moduleResolution node
 # Prune devDependencies to keep production node_modules minimal
 RUN npm prune --omit=dev
 
