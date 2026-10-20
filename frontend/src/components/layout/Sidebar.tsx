@@ -16,6 +16,8 @@ import {
   ShieldAlert,
   LogOut,
   Building2,
+  Activity,
+  UserCircle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { cn } from '@/lib/utils/cn';
@@ -34,6 +36,7 @@ export function Sidebar({ className }: { className?: string }) {
   const { user, logout, isClient } = useAuth();
 
   // Internal user navigation
+  const isTeamMember = user?.role === 'TEAM_MEMBER';
   const internalNavItems: NavItem[] = [
     {
       label: 'Dashboard',
@@ -52,10 +55,27 @@ export function Sidebar({ className }: { className?: string }) {
       icon: FolderKanban,
     },
     {
+      label: isTeamMember ? 'My Tasks' : 'Tasks',
+      href: '/tasks',
+      icon: CheckSquare,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD', 'TEAM_MEMBER'],
+    },
+    {
       label: 'Resources',
       href: '/resources',
       icon: UserCheck,
-      roles: ['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD'],
+      roles: ['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD', 'TEAM_MEMBER'],
+    },
+    {
+      label: 'System Health',
+      href: '/system',
+      icon: Activity,
+      roles: ['SUPER_ADMIN', 'ADMIN'],
+    },
+    {
+      label: 'My Profile',
+      href: '/profile',
+      icon: UserCircle,
     },
   ];
 
@@ -70,6 +90,11 @@ export function Sidebar({ className }: { className?: string }) {
       label: 'My Projects',
       href: '/portal/projects',
       icon: FolderKanban,
+    },
+    {
+      label: 'My Account',
+      href: '/profile',
+      icon: UserCircle,
     },
   ];
 

@@ -19,6 +19,9 @@ import {
   ResourceOverviewSummary,
   AIReport,
   ClientPortalDashboard,
+  PortfolioSummary,
+  QueueMetrics,
+  SystemHealthResponse,
 } from '@/types';
 
 // ==========================================
@@ -120,6 +123,9 @@ export const projectsApi = {
 
   getResources: (id: string) =>
     apiClient<ApiResponse<any>>(`/projects/${id}/resources`),
+
+  getPortfolioSummary: () =>
+    apiClient<ApiResponse<PortfolioSummary>>('/projects/portfolio-summary'),
 };
 
 // ==========================================
@@ -195,6 +201,44 @@ export const tasksApi = {
   remove: (projectId: string, taskId: string) =>
     apiClient<{ success: boolean; message: string }>(`/projects/${projectId}/tasks/${taskId}`, {
       method: 'DELETE',
+    }),
+
+  listAll: (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    priority?: string;
+    milestoneId?: string;
+    assigneeId?: string;
+    projectId?: string;
+    search?: string;
+    dueDate?: string;
+  }) => apiClient<PaginatedResponse<Task>>('/tasks', { params }),
+
+  listMy: (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    priority?: string;
+    projectId?: string;
+    search?: string;
+  }) => apiClient<PaginatedResponse<Task>>('/tasks/my', { params }),
+
+  updateDirect: (
+    taskId: string,
+    data: Partial<{
+      title: string;
+      description: string;
+      status: string;
+      priority: string;
+      milestoneId: string | null;
+      assigneeId: string | null;
+      dueDate: string | null;
+    }>,
+  ) =>
+    apiClient<ApiResponse<Task>>(`/tasks/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     }),
 };
 
@@ -369,4 +413,15 @@ export const clientPortalApi = {
 
   getReportById: (projectId: string, reportId: string) =>
     apiClient<ApiResponse<any>>(`/client-portal/projects/${projectId}/reports/${reportId}`),
+};
+
+// ==========================================
+// 11. System Administration API (Role: SUPER_ADMIN, ADMIN)
+// ==========================================
+export const systemApi = {
+  getHealth: () =>
+    apiClient<SystemHealthResponse>('/health'),
+
+  getQueueMetrics: () =>
+    apiClient<ApiResponse<QueueMetrics>>('/admin/queues/ai-reports'),
 };

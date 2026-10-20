@@ -48,4 +48,8 @@ export class ListTaskQueryDto {
   @IsOptional()
   @IsISO8601()
   dueDate?: string;
+
+  @IsOptional()
+  @IsUUID()
+  projectId?: string;
 }

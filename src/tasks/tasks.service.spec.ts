@@ -216,4 +216,88 @@ describe('TasksService', () => {
       expect(prisma.task.delete).toHaveBeenCalled();
     });
   });
+
+  describe('findAllOrganizationTasks', () => {
+    it('should query organization tasks with pagination and filters', async () => {
+      prisma.task.count.mockResolvedValue(1);
+      prisma.task.findMany.mockResolvedValue([
+        {
+          id: 'task-1',
+          projectId: 'proj-1',
+          title: 'Organization Task',
+          status: TaskStatus.TODO,
+          priority: TaskPriority.HIGH,
+        },
+      ]);
+
+      const result = await service.findAllOrganizationTasks(adminUser, {
+        page: 1,
+        limit: 10,
+        status: TaskStatus.TODO,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data).toHaveLength(1);
+      expect(result.meta.total).toBe(1);
+      expect(prisma.task.findMany).toHaveBeenCalled();
+    });
+  });
+
+  describe('findMyTasks', () => {
+    it('should query tasks assigned to current user', async () => {
+      prisma.task.count.mockResolvedValue(1);
+      prisma.task.findMany.mockResolvedValue([
+        {
+          id: 'task-1',
+          projectId: 'proj-1',
+          assigneeId: teamMemberUser.id,
+          title: 'My Task',
+          status: TaskStatus.IN_PROGRESS,
+          priority: TaskPriority.MEDIUM,
+        },
+      ]);
+
+      const result = await service.findMyTasks(teamMemberUser, {
+        page: 1,
+        limit: 10,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data).toHaveLength(1);
+      expect(result.meta.total).toBe(1);
+    });
+  });
+
+  describe('updateDirect', () => {
+    it('should throw NotFoundException if task does not exist in organization', async () => {
+      prisma.task.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.updateDirect(adminUser, 'invalid-task', {
+          status: TaskStatus.DONE,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should find task and delegate to update', async () => {
+      prisma.task.findFirst.mockResolvedValue({
+        id: 'task-1',
+        projectId,
+        assigneeId: adminUser.id,
+        status: TaskStatus.TODO,
+      });
+      prisma.project.findFirst.mockResolvedValue({ id: projectId });
+      prisma.task.update.mockResolvedValue({
+        id: 'task-1',
+        projectId,
+        status: TaskStatus.DONE,
+      });
+
+      const result = await service.updateDirect(adminUser, 'task-1', {
+        status: TaskStatus.DONE,
+      });
+
+      expect(result.success).toBe(true);
+    });
+  });
 });

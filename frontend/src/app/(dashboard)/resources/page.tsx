@@ -71,7 +71,7 @@ export default function ResourcesPage() {
     <DashboardLayout
       title="Resource Capacity Planning"
       description="Monitor team allocation, detect burnout risks, and balance workload across active projects."
-      requiredRoles={['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD']}
+      requiredRoles={['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD', 'TEAM_MEMBER']}
     >
       <div className="space-y-6">
 

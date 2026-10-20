@@ -49,6 +49,18 @@ export class ProjectsController {
     return this.projectsService.findAll(user.organizationId, query);
   }
 
+  @Get('portfolio-summary')
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.ADMIN,
+    Role.PROJECT_MANAGER,
+    Role.TEAM_LEAD,
+    Role.TEAM_MEMBER,
+  )
+  getPortfolioSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.projectsService.getPortfolioSummary(user.organizationId);
+  }
+
   @Get(':id/delivery-summary')
   @Roles(
     Role.SUPER_ADMIN,

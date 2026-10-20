@@ -187,6 +187,11 @@ export interface Task {
     id: string;
     name: string;
   } | null;
+  project?: {
+    id: string;
+    name: string;
+    status: ProjectStatus;
+  } | null;
 }
 
 // Milestones
@@ -330,4 +335,59 @@ export interface ClientPortalDashboard {
     startDate?: string | null;
     endDate?: string | null;
   }>;
+}
+
+// Portfolio Summary & Deadlines
+export interface UpcomingDeadline {
+  id: string;
+  projectId: string;
+  projectName: string;
+  title: string;
+  dueDate: string;
+  type: 'PROJECT' | 'MILESTONE';
+  isOverdue: boolean;
+  status: string;
+}
+
+export interface CriticalRiskAlert {
+  projectId: string;
+  projectName: string;
+  severity: RiskSeverity;
+  title: string;
+  description: string;
+}
+
+export interface PortfolioSummary {
+  totalProjects: number;
+  healthyCount: number;
+  atRiskCount: number;
+  criticalCount: number;
+  averageProgress: number;
+  upcomingDeadlines: UpcomingDeadline[];
+  criticalRisks: CriticalRiskAlert[];
+}
+
+// System Administration & Queues
+export interface QueueMetrics {
+  queue: string;
+  waiting: number;
+  active: number;
+  completed: number;
+  failed: number;
+  delayed?: number;
+}
+
+export interface SystemHealthResponse {
+  status: string;
+  timestamp: string;
+  services: {
+    database: {
+      status: string;
+      message?: string;
+    };
+    redis: {
+      status: string;
+      message?: string;
+    };
+  };
 }

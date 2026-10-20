@@ -30,6 +30,8 @@ import { HealthScoreService } from './services/health-score.service.js';
 import {
   ProjectHealthResult,
   ProjectRisk,
+  ProjectHealthStatus,
+  RiskSeverity,
 } from './services/risk-engine.types.js';
 
 @Injectable()
@@ -480,6 +482,157 @@ export class ProjectsService {
     return {
       success: true,
       data: health,
+    };
+  }
+
+  async getPortfolioSummary(organizationId: string) {
+    const projects = await this.prisma.project.findMany({
+      where: { organizationId },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            companyName: true,
+          },
+        },
+        milestones: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            dueDate: true,
+          },
+        },
+        _count: {
+          select: {
+            tasks: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const now = new Date();
+    const in14Days = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+    let healthyCount = 0;
+    let atRiskCount = 0;
+    let criticalCount = 0;
+    let totalProgressSum = 0;
+    let progressProjectCount = 0;
+
+    const criticalRisks: Array<{
+      projectId: string;
+      projectName: string;
+      severity: string;
+      title: string;
+      description: string;
+    }> = [];
+
+    const upcomingDeadlines: Array<{
+      id: string;
+      projectId: string;
+      projectName: string;
+      title: string;
+      dueDate: Date;
+      type: 'PROJECT' | 'MILESTONE';
+      isOverdue: boolean;
+      status: string;
+    }> = [];
+
+    for (const project of projects) {
+      if (project.endDate && project.status !== ProjectStatus.COMPLETED) {
+        if (project.endDate <= in14Days) {
+          upcomingDeadlines.push({
+            id: project.id,
+            projectId: project.id,
+            projectName: project.name,
+            title: `${project.name} Deadline`,
+            dueDate: project.endDate,
+            type: 'PROJECT',
+            isOverdue: project.endDate < now,
+            status: project.status,
+          });
+        }
+      }
+
+      for (const ms of project.milestones) {
+        if (ms.dueDate && ms.status !== MilestoneStatus.COMPLETED) {
+          if (ms.dueDate <= in14Days) {
+            upcomingDeadlines.push({
+              id: ms.id,
+              projectId: project.id,
+              projectName: project.name,
+              title: ms.name,
+              dueDate: ms.dueDate,
+              type: 'MILESTONE',
+              isOverdue: ms.dueDate < now,
+              status: ms.status,
+            });
+          }
+        }
+      }
+
+      try {
+        const healthRes = await this.getProjectHealth(
+          organizationId,
+          project.id,
+        );
+        const health = healthRes.data;
+        if (health.status === ProjectHealthStatus.HEALTHY) healthyCount++;
+        else if (health.status === ProjectHealthStatus.AT_RISK) atRiskCount++;
+        else if (health.status === ProjectHealthStatus.CRITICAL)
+          criticalCount++;
+
+        for (const risk of health.risks) {
+          if (
+            risk.severity === RiskSeverity.CRITICAL ||
+            risk.severity === RiskSeverity.HIGH
+          ) {
+            criticalRisks.push({
+              projectId: project.id,
+              projectName: project.name,
+              severity: risk.severity,
+              title: risk.title,
+              description: risk.description,
+            });
+          }
+        }
+      } catch {
+        healthyCount++;
+      }
+
+      try {
+        const deliveryRes = await this.getDeliverySummary(
+          organizationId,
+          project.id,
+        );
+        totalProgressSum += deliveryRes.data.progress;
+        progressProjectCount++;
+      } catch {
+        // Ignore individual project summary failure
+      }
+    }
+
+    upcomingDeadlines.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+
+    const averageProgress =
+      progressProjectCount > 0
+        ? Math.round(totalProgressSum / progressProjectCount)
+        : 0;
+
+    return {
+      success: true,
+      data: {
+        totalProjects: projects.length,
+        healthyCount,
+        atRiskCount,
+        criticalCount,
+        averageProgress,
+        upcomingDeadlines: upcomingDeadlines.slice(0, 10),
+        criticalRisks: criticalRisks.slice(0, 10),
+      },
     };
   }
 }

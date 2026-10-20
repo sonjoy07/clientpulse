@@ -431,6 +431,220 @@ export class TasksService {
     };
   }
 
+  async findAllOrganizationTasks(
+    currentUser: AuthenticatedUser,
+    query: ListTaskQueryDto,
+  ): Promise<PaginatedResponse<TaskResponseItem>> {
+    const page = Math.max(1, query.page || 1);
+    const limit = Math.min(100, Math.max(1, query.limit || 10));
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.TaskWhereInput = {
+      project: {
+        organizationId: currentUser.organizationId,
+        ...(currentUser.role === Role.TEAM_MEMBER
+          ? {
+              projectMembers: {
+                some: { userId: currentUser.id },
+              },
+            }
+          : {}),
+      },
+    };
+
+    if (query.projectId) {
+      where.projectId = query.projectId;
+    }
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (query.priority) {
+      where.priority = query.priority;
+    }
+
+    if (query.milestoneId) {
+      where.milestoneId = query.milestoneId;
+    }
+
+    if (query.assigneeId) {
+      where.assigneeId = query.assigneeId;
+    }
+
+    if (query.dueDate) {
+      const d = new Date(query.dueDate);
+      const startOfDay = new Date(d);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(d);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+      where.dueDate = {
+        gte: startOfDay,
+        lte: endOfDay,
+      };
+    }
+
+    if (query.search) {
+      where.OR = [
+        { title: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, items] = await Promise.all([
+      this.prisma.task.count({ where }),
+      this.prisma.task.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          assignee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
+          },
+          milestone: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+            },
+          },
+          project: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    return {
+      success: true,
+      data: items,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
+  }
+
+  async findMyTasks(
+    currentUser: AuthenticatedUser,
+    query: ListTaskQueryDto,
+  ): Promise<PaginatedResponse<TaskResponseItem>> {
+    const page = Math.max(1, query.page || 1);
+    const limit = Math.min(100, Math.max(1, query.limit || 10));
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.TaskWhereInput = {
+      assigneeId: currentUser.id,
+      project: {
+        organizationId: currentUser.organizationId,
+      },
+    };
+
+    if (query.projectId) {
+      where.projectId = query.projectId;
+    }
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (query.priority) {
+      where.priority = query.priority;
+    }
+
+    if (query.search) {
+      where.OR = [
+        { title: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, items] = await Promise.all([
+      this.prisma.task.count({ where }),
+      this.prisma.task.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
+        include: {
+          assignee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
+          },
+          milestone: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+            },
+          },
+          project: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    return {
+      success: true,
+      data: items,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
+  }
+
+  async updateDirect(
+    currentUser: AuthenticatedUser,
+    taskId: string,
+    dto: UpdateTaskDto,
+  ): Promise<ApiResponse<TaskResponseItem>> {
+    const task = await this.prisma.task.findFirst({
+      where: {
+        id: taskId,
+        project: {
+          organizationId: currentUser.organizationId,
+        },
+      },
+      include: {
+        project: true,
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    return this.update(currentUser, task.projectId, taskId, dto);
+  }
+
   private async validateAssigneeMembership(
     organizationId: string,
     projectId: string,

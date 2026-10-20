@@ -30,6 +30,15 @@ describe('ProjectsService', () => {
     milestone: {
       groupBy: jest.Mock;
     };
+    projectBudget: {
+      findUnique: jest.Mock;
+    };
+    costEntry: {
+      aggregate: jest.Mock;
+    };
+    projectMember: {
+      aggregate: jest.Mock;
+    };
     $transaction: jest.Mock;
   };
 
@@ -53,6 +62,15 @@ describe('ProjectsService', () => {
       },
       milestone: {
         groupBy: jest.fn(),
+      },
+      projectBudget: {
+        findUnique: jest.fn(),
+      },
+      costEntry: {
+        aggregate: jest.fn(),
+      },
+      projectMember: {
+        aggregate: jest.fn(),
       },
       $transaction: jest.fn(),
     };
@@ -316,6 +334,53 @@ describe('ProjectsService', () => {
       expect(result.expectedProgress).toBe(10);
       // 0 >= 10 - 10 = 0 -> ON_TRACK
       expect(result.status).toBe(TimelineStatus.ON_TRACK);
+    });
+  });
+
+  describe('getPortfolioSummary', () => {
+    it('should aggregate portfolio counts, upcoming deadlines, and health', async () => {
+      prisma.project.findMany.mockResolvedValue([
+        {
+          id: 'proj-1',
+          name: 'Alpha Project',
+          status: ProjectStatus.ACTIVE,
+          endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // in 5 days
+          milestones: [
+            {
+              id: 'ms-1',
+              name: 'Milestone 1',
+              status: MilestoneStatus.IN_PROGRESS,
+              dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+            },
+          ],
+          _count: { tasks: 5 },
+        },
+      ]);
+
+      prisma.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        name: 'Alpha Project',
+        status: ProjectStatus.ACTIVE,
+        startDate: new Date('2026-01-01'),
+        endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+      });
+
+      prisma.task.groupBy.mockResolvedValue([
+        { status: TaskStatus.DONE, _count: { _all: 3 } },
+        { status: TaskStatus.TODO, _count: { _all: 2 } },
+      ]);
+      prisma.milestone.groupBy.mockResolvedValue([]);
+      prisma.projectBudget.findUnique.mockResolvedValue(null);
+      prisma.projectMember.aggregate.mockResolvedValue({
+        _max: { allocationPercentage: 50 },
+      });
+
+      const result = await service.getPortfolioSummary(orgId);
+
+      expect(result.success).toBe(true);
+      expect(result.data.totalProjects).toBe(1);
+      expect(result.data.upcomingDeadlines.length).toBeGreaterThan(0);
+      expect(result.data.averageProgress).toBeGreaterThanOrEqual(0);
     });
   });
 });
