@@ -43,6 +43,13 @@ export class ProjectMembersController {
   }
 
   @Get()
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.ADMIN,
+    Role.PROJECT_MANAGER,
+    Role.TEAM_LEAD,
+    Role.TEAM_MEMBER,
+  )
   findAll(
     @CurrentUser() user: AuthenticatedUser,
     @Param('projectId') projectId: string,

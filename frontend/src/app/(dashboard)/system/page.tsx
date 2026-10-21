@@ -94,13 +94,21 @@ export default function SystemHealthPage() {
             <CardContent>
               {loadingHealth ? (
                 <Skeleton className="h-7 w-20" />
-              ) : (
+              ) : healthData?.status === 'ok' ? (
                 <>
                   <div className="flex items-center gap-2">
                     <span className="text-xl font-bold text-foreground">Operational</span>
                     <Badge variant="healthy" className="text-[10px]">UP</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">NestJS Core Runtime</p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-bold text-destructive">Unreachable</span>
+                    <Badge variant="destructive" className="text-[10px]">DOWN</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">API offline or degraded</p>
                 </>
               )}
             </CardContent>
@@ -119,15 +127,21 @@ export default function SystemHealthPage() {
             <CardContent>
               {loadingHealth ? (
                 <Skeleton className="h-7 w-24" />
+              ) : healthData?.dependencies?.postgres === 'up' ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-bold text-foreground">Connected</span>
+                    <Badge variant="healthy" className="text-[10px]">UP</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Prisma Connection Pool</p>
+                </>
               ) : (
                 <>
                   <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold text-foreground">
-                      {healthData?.services?.database?.status === 'healthy' ? 'Healthy' : 'Connected'}
-                    </span>
-                    <Badge variant="healthy" className="text-[10px]">CONNECTED</Badge>
+                    <span className="text-xl font-bold text-destructive">Disconnected</span>
+                    <Badge variant="destructive" className="text-[10px]">DOWN</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Prisma Connection Pool</p>
+                  <p className="text-xs text-muted-foreground mt-1">Postgres unreachable</p>
                 </>
               )}
             </CardContent>
@@ -146,15 +160,21 @@ export default function SystemHealthPage() {
             <CardContent>
               {loadingHealth ? (
                 <Skeleton className="h-7 w-24" />
+              ) : healthData?.dependencies?.redis === 'up' ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-bold text-foreground">Active</span>
+                    <Badge variant="healthy" className="text-[10px]">UP</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">BullMQ Queue Broker</p>
+                </>
               ) : (
                 <>
                   <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold text-foreground">
-                      {healthData?.services?.redis?.status === 'healthy' ? 'Healthy' : 'Active'}
-                    </span>
-                    <Badge variant="healthy" className="text-[10px]">ACTIVE</Badge>
+                    <span className="text-xl font-bold text-destructive">Disconnected</span>
+                    <Badge variant="destructive" className="text-[10px]">DOWN</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">BullMQ Queue Broker</p>
+                  <p className="text-xs text-muted-foreground mt-1">Redis broker unreachable</p>
                 </>
               )}
             </CardContent>

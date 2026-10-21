@@ -379,15 +379,11 @@ export interface QueueMetrics {
 
 export interface SystemHealthResponse {
   status: string;
+  service: string;
   timestamp: string;
-  services: {
-    database: {
-      status: string;
-      message?: string;
-    };
-    redis: {
-      status: string;
-      message?: string;
-    };
+  database?: string;
+  dependencies?: {
+    postgres: 'up' | 'down';
+    redis: 'up' | 'down';
   };
 }

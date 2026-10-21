@@ -38,6 +38,7 @@ export class ClientsController {
   }
 
   @Get()
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PROJECT_MANAGER, Role.TEAM_LEAD)
   findAll(
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: ListClientQueryDto,
@@ -46,6 +47,7 @@ export class ClientsController {
   }
 
   @Get(':id')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PROJECT_MANAGER, Role.TEAM_LEAD)
   findOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.clientsService.findOne(user.organizationId, id);
   }

@@ -64,7 +64,7 @@ export function Sidebar({ className }: { className?: string }) {
       label: 'Resources',
       href: '/resources',
       icon: UserCheck,
-      roles: ['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD', 'TEAM_MEMBER'],
+      roles: ['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD'],
     },
     {
       label: 'System Health',

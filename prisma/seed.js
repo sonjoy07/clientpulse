@@ -47,6 +47,15 @@ async function main() {
     });
     console.log(`Created Client B: ${clientB.companyName}`);
     // 4. Users with distinct roles
+    const superAdminUser = await prisma.user.create({
+        data: {
+            organizationId: org.id,
+            name: 'Sarah SuperAdmin',
+            email: 'superadmin@acme.example.com',
+            passwordHash: devPasswordHash,
+            role: client_1.Role.SUPER_ADMIN,
+        },
+    });
     const adminUser = await prisma.user.create({
         data: {
             organizationId: org.id,
@@ -103,7 +112,7 @@ async function main() {
             role: client_1.Role.CLIENT,
         },
     });
-    console.log('Created 6 users (Admin, PM, Team Lead, Team Member, Client A Rep, Client B Rep)');
+    console.log('Created 7 users (Super Admin, Admin, PM, Team Lead, Team Member, Client A Rep, Client B Rep)');
     // 4. Projects
     const project = await prisma.project.create({
         data: {

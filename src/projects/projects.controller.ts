@@ -42,6 +42,13 @@ export class ProjectsController {
   }
 
   @Get()
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.ADMIN,
+    Role.PROJECT_MANAGER,
+    Role.TEAM_LEAD,
+    Role.TEAM_MEMBER,
+  )
   findAll(
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: ListProjectQueryDto,
@@ -120,6 +127,13 @@ export class ProjectsController {
   }
 
   @Get(':id')
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.ADMIN,
+    Role.PROJECT_MANAGER,
+    Role.TEAM_LEAD,
+    Role.TEAM_MEMBER,
+  )
   findOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.projectsService.findOne(user.organizationId, id);
   }
